@@ -1,0 +1,217 @@
+{% extends 'store/main.html' %}
+{% load static %}
+
+{% block content%}
+
+    <div class="checkout-wrapper">
+
+        <div class="left-section">
+            <div id="form-wrapper" class="box-element">
+                <form id="form" action="">
+                    {% csrf_token %}
+                    <div class="shipping-info" id= "user-info">
+                        <input type="text" class="form-control" placeholder="Name..." name="name">
+                        <input type="email" class="form-control" placeholder="Emaill..." name="email">
+                    </div>
+                   
+    
+                    <div id="shipping-info">
+                        <h6 class="border-bottom">Shipping Information:</h6>
+    
+                        <div class="shipping-info" >
+                            
+                            <input type="text" class="form-control" placeholder="Address..." name="address">
+                            <input type="text" class="form-control" placeholder="City..." name="city">
+                            <input type="text" class="form-control" placeholder="State..." name="state">
+                            <input type="text" class="form-control" placeholder="Zip code..." name="zipcode">
+                            
+                        </div>
+                    </div>
+    
+                    <div id="form-btn">
+                        <input class="btn btn-success button hidden" type="submit" value="Continue">
+                    </div>
+                    
+
+                </form>
+            </div>
+
+            <div class="box-element  payment-info hidden" id="payment-info">
+                <!-- <small class="" >Paypal Option</small> -->
+                <!-- <button class="btn btn-primary button" id="make-payment">Make payment</button> -->
+
+                <div id="paypal-button-container" class="pt-3">
+
+                </div>
+
+            </div>
+        </div>
+
+        <div class="right-section box-element">
+
+            <div class="back-to-cart border-bottom">
+                <a class="btn btn-outline-secondary" href="{% url 'cart' %}">Back to Cart</a>
+            </div>
+
+            <div class="border-bottom ord-summr">
+                <h3>Order Summary</h3>
+            </div>
+            {%for item in items %}
+                <div class="border-bottom c-p-s">
+                    <img src="{{item.product.image_url}}" alt="">
+                    <span>{{item.product.name}}</span>
+                    <span>${{item.product.price}}</span>
+                    <span class="last-quantity">x{{item.quantity}}</span>
+                </div>
+            {% endfor %}
+
+            <div class="final-info">
+                <h5>Items:{{order.get_cart_items}}</h5>
+                <h5>Total: ${{order.get_cart_total|floatformat:2}}</h5>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Include the PayPal JavaScript SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=USD"></script>
+
+    <script>
+        // Render the PayPal button into #paypal-button-container
+        paypal.Buttons({
+
+            style: {
+                color:  'blue',
+                shape:  'rect',
+                label:  'pay',
+                height: 40
+            },
+
+            // Set up the transaction
+            createOrder: function(data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: '88.44'
+                        }
+                    }]
+                });
+            },
+
+            // Finalize the transaction
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(orderData) {
+                    // Successful capture! For demo purposes:
+                    console.log('Capture result', orderData, JSON.stringify(orderData, null, 2));
+                    var transaction = orderData.purchase_units[0].payments.captures[0];
+                    alert('Transaction '+ transaction.status + ': ' + transaction.id + '\n\nSee console for all available details');
+
+                    // Replace the above to show a success message within this page, e.g.
+                    // const element = document.getElementById('paypal-button-container');
+                    // element.innerHTML = '';
+                    // element.innerHTML = '<h3>Thank you for your payment!</h3>';
+                    // Or go to another URL:  actions.redirect('thank_you.html');
+                });
+            }
+
+
+        }).render('#paypal-button-container');
+    </script>
+    <script>
+        var shipping = '{{order.shipping}}'
+        var total = '{{order.get_cart_total}}'
+        var user = '{{request.user}}'
+        
+        if(shipping == "False"){
+            document.getElementById('shipping-info').innerHTML = '';
+        }
+
+        var form = document.getElementById('form')
+        csrftoken = form.getElementsByTagName('input')[0].value
+
+        form.addEventListener('submit', function(e){
+            // stop the form from submitting
+            e.preventDefault()
+            console.log('Form submitted...');
+            document.getElementById('form-btn').classList.add('hidden');  
+            document.getElementById('payment-info').classList.remove('hidden');
+
+        })
+
+       /*-  var makePayment = document.getElementById('make-payment');
+        makePayment.addEventListener('click', function(e){
+            submitFormData();
+        }) */
+
+        function submitFormData(){
+            console.log("Paymant button clicked");
+
+            var userFormData = {
+                'name': null,
+                'email': null,
+                'total': total,
+            }
+
+            var shippingInfo = {
+                'address': null,
+                'city': null,
+                'state': null,
+                'zipcode': null,
+
+            }
+
+            if(shipping != 'False'){
+                shippingInfo.address = form.address.value;
+                shippingInfo.city = form.city.value;
+                shippingInfo.state = form.state.value;
+                shippingInfo.zipcode = form.zipcode.value;
+            }
+
+            
+            if(user === "AnonymousUser"){
+                userFormData.name = form.name.value;
+                userFormData.email = form.email.value;
+            }
+            else if(user != "AnonymousUser"){
+                userFormData.name = '{{user.customer.name}}';
+                userFormData.email = '{{user.customer.email}}';
+            }
+            // Sending data to the Back end
+            var url = '/process_order/';
+            fetch(url, {
+                method: 'POST',
+                headers:{
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                },
+                body: JSON.stringify({'form':userFormData, 'shippingInfo': shippingInfo})
+            })
+
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("Success ", data);
+                alert("Transaction Completed");
+                cart = {}
+                document.cookie = 'cart=' + JSON.stringify(cart) + ";domain=;path=/"
+                window.location.href = "{% url 'store' %}"
+            })
+
+        }
+
+       
+
+        if(user != 'AnonymousUser'){
+            document.getElementById('user-info').classList.add('hidden');
+        }
+        
+        if(shipping == 'False' && user != 'AnonymousUser'){
+            // Hide entire form if user is logged in and shipping is false
+            document.getElementById('form-wrapper').classList.add('hidden');
+            document.getElementById('payment-info').classList.remove('hidden');
+        }
+
+        
+
+    </script>
+
+{% endblock %}

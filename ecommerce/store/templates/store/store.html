@@ -1,0 +1,37 @@
+{% extends 'store/main.html' %}
+{% load static %}
+
+{% block content%}
+
+    <div class="product-wrapper">
+        {% for product in product_list %}
+            <div class="card box-element card-edit " >
+                <img src="{{product.image_url}}" class="card-img-top" alt="...">
+                <div class="card-body">
+                <h5 class="card-title">{{ product.name }}</h5>
+        
+                <div class="product-action-bar">
+        
+                    <div class="buttons">
+                        <button data-product={{product.id}} data-action = "add" class="btn btn-outline-secondary update-cart">Add to cart</button>
+                        <button class="btn btn-outline-success">View</button>
+                    </div>
+        
+                    <div class="price">
+                        ${{product.price|floatformat:2}}
+                    </div>
+                </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        
+    </div>
+
+    <script src="">
+        var user = '{{request.user}}';
+    </script>
+
+    
+
+{% endblock %}

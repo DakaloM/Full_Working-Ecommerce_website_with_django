@@ -1,0 +1,60 @@
+{% extends 'store/main.html' %}
+{% load static %}
+{% block content %}
+
+
+
+    <div class="top-part box-element">
+        <div class="out-of-cart">
+            <a class="btn btn-outline-secondary" href="{% url 'store' %}">Continue Shopping</a>
+        </div>
+
+        <div class="checkout-summary">
+            <div class="item-summary">
+                <h4>Items: {{order.get_cart_items}}</h4>
+                <h4>Total: ${{order.get_cart_total|floatformat:2}}</h4>
+            </div>
+
+            <div class="checkout-btn">
+                <a class="btn btn-success" href="{% url 'checkout' %}">Checkout</a>
+            </div>
+        </div>
+    </div>
+    {% for item in items %}
+        <div class="cart-item-info box-element">
+            <div class="item">
+                <img src="{{item.product.image_url}}" alt="">
+
+                <div class="item-name">
+                    <h5>Item</h5>
+                    <span>{{item.product.name}}</span>
+                </div>
+            </div>
+
+            <div class="item-count-info">
+                <div class="price-info">
+                    <h5>Price</h5>
+                    <span>${{item.product.price}}</span>
+                </div>
+
+                <div class="quantity">
+                    <h5>Quantity</h5>
+                    <div class="quatity-input">
+                        <span>{{item.quantity}}</span>
+                        <div class="quantity-buttons">
+                            <img data-product={{item.product.id}} data-action = "add" src="{% static 'images/arrow-up.png' %}" alt="" class="change-quantity update-cart">
+                            <img data-product={{item.product.id}}  data-action = "remove" src="{% static 'images/arrow-down.png' %}" alt="" class="change-quantity update-cart">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="total">
+                    <h5>Total</h5>
+                    <span>{{item.get_total|floatformat:2}}</span>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endblock %}
